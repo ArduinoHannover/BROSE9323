@@ -1,17 +1,21 @@
-#include <digitalWriteFast.h> // use https://github.com/NicksonYap/digitalWriteFast for speedup
-
 #include <BROSE9323.h>
 
 BROSE9323 display(112, 16, 28);
 
+uint32_t refresh_at;
+const uint32_t REFRESH_TIME = 120000L;
+
+//#define DEBUG
 void setup() {
-	Serial.begin(38400); //Use 38400 for bitmaps, otherwise 115200 is okay.
+	Serial.begin(115200);
 	display.begin();
 	delay(1000);
 	
 	display.fillScreen(1);
-	uint32_t t1 = millis();
+	display.display();
 	display.fillScreen(0);
+	uint32_t t1 = millis();
+	display.display();
 	uint32_t t2 = millis();
 	Serial.println(t2 - t1);
 }
@@ -26,6 +30,8 @@ void loop() {
 			// Draw Bitmap (must be n x 8 wide)
 			case 'b': case 'B': //BxxyywwhhcBITMAP (xx/ww = 8 bit hex x position/width; yy/hh = 8 bit y position/height; c = 0/1 color; BITMAP = bytes as hex)
 				{
+					// May lead to buffer overflow, you may need to segment the bitmap into multiple frames
+					// Or just use the ser pixel function
 					while (Serial.available() < 9) {
 						delay(1);
 					}
@@ -63,7 +69,7 @@ void loop() {
 					}
 					break;
 				}
-			// Display (only works on ATmega328)
+			// Display
 			case 'd': case 'D': //D
 				{
 					display.display();
@@ -85,14 +91,18 @@ void loop() {
 					while (Serial.available() <= 6) {
 						delay(1);
 					}
-					display.setCursor((hex2dec(Serial.read()) << 4) | hex2dec(Serial.read()), (hex2dec(Serial.read()) << 4) | hex2dec(Serial.read()));
-					display.setTextColor(Serial.read() - '0');
+					uint8_t x = (hex2dec(Serial.read()) << 4) | hex2dec(Serial.read());
+					uint8_t y = (hex2dec(Serial.read()) << 4) | hex2dec(Serial.read());
+					uint8_t c = Serial.read() - '0';
+					display.setCursor(x, y);
+					display.setTextColor(c, !c);
 					display.setTextSize(Serial.read() - '0');
 					while (true) {
 						if (!Serial.available()) {
 							delay(1);
 						}
 						if (Serial.peek() == '\n') break;
+						if (Serial.peek() == '\r') {Serial.read();continue;};
 						char c = Serial.read();
 						if (c == '\\' && Serial.peek() == 'n') {
 							display.println();
@@ -103,7 +113,7 @@ void loop() {
 					}
 					return;
 				}
-			// Return buffer
+			// Return buffer (show pixels on console)
 			case 'r': case 'R': //R
 				{
 					display.printBuffer();
@@ -111,25 +121,32 @@ void loop() {
 					break;
 				}
 			// Set Pixel
-			case 's': case 'S': // Sxxyc (xx = 8 bit hex x position; y = 4 bit y position; c = 0/1 color)
+			case 's': case 'S': // Sxxyyc (xx = 8 bit hex x position; y = 8 bit y position; c = 0/1 color)
 				{
 					while (Serial.available() <= 6) {
 						delay(1);
 					}
-					display.drawPixel((hex2dec(Serial.read()) << 4) | hex2dec(Serial.read()),
-					                  (hex2dec(Serial.read()) << 4) | hex2dec(Serial.read()),
-					                   hex2dec(Serial.read())
-					                 );
+					uint8_t x = (hex2dec(Serial.read()) << 4) | hex2dec(Serial.read());
+					uint8_t y = (hex2dec(Serial.read()) << 4) | hex2dec(Serial.read());
+					bool color = hex2dec(Serial.read());
+					display.drawPixel(x, y, color);
 					break;
 				}
 			default:
+#ifdef DEBUG
 				Serial.print("0x");
 				Serial.print(cmd >> 4, HEX);
 				Serial.print(cmd & 3, HEX);
-				Serial.println("Command not known.");
+				Serial.println(" - command not known.");
 				Serial.flush();
+#endif
+				break;
 		}
-		Serial.readStringUntil('\n');
+	}
+	// Refresh content every REFRESH_TIME (by default 2 min)
+	if (refresh_at < millis()) {
+		refresh_at = millis() + REFRESH_TIME;
+		display.display(true);
 	}
 }
 
