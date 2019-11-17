@@ -17,6 +17,15 @@ BROSE9323::BROSE9323(uint8_t w, uint8_t h, uint8_t pw, uint16_t ft) :
 	_new_buffer = (uint8_t*) calloc(_buffer_size, sizeof(uint8_t));
 }
 
+#ifdef ESP8266
+void BROSE9323::begin(Stream* s) {
+	stream = s;
+	fillScreen(0);
+	setCursor(0, 4);
+	print("ESP Connected");
+	display();
+}
+#else
 void BROSE9323::begin(void) {
 	digitalWrite(ADDR_0, 1);
 	digitalWrite(ADDR_1, 1);
@@ -60,8 +69,13 @@ void BROSE9323::begin(void) {
 	drawBitmap((width() - 72) / 2, (height() - 16) / 2, _hannio_splash, 72, 16, 1);
 	display();
 }
+#endif
 
-void BROSE9323::display(void) {
+void BROSE9323::display(bool force) {
+#ifdef ESP8266
+	stream->print("D\n");
+	stream->flush();
+#else
 	if (_direct_mode) return;
 	for (uint8_t x = 0; x < width(); x++) {
 		_selectPanel(x / _panel_width);
@@ -71,7 +85,7 @@ void BROSE9323::display(void) {
 		for (uint8_t y = 0; y < height(); y++) {
 			bool b = _new_buffer[y * _buffer_width + x / 8] & (1 << (x & 7));
 #if !defined(__AVR_ATmega168P__) && !defined(__AVR_ATmega168PB__) && !defined(__AVR_ATmega168__)
-			if ((bool)(_old_buffer[y * _buffer_width + x / 8] & (1 << (x & 7))) == b) {
+			if (!force && (bool)(_old_buffer[y * _buffer_width + x / 8] & (1 << (x & 7))) == b) {
 				continue;
 			}
 #endif
@@ -87,9 +101,16 @@ void BROSE9323::display(void) {
 	// Store currently displayed content in old buffer
 	memcpy(_old_buffer, _new_buffer, _buffer_size);
 #endif
+#endif
 }
 
 void BROSE9323::drawPixel(int16_t x, int16_t y, uint16_t color) {
+#ifdef ESP8266
+	char s[10];
+	sprintf(s, "S%02x%02x%d\n", x, y, (bool)color);
+	stream->print(s);
+	stream->flush();
+#else
 	if (y >= height() || y < 0 || x >= width() || x < 0) return;
 	if (color) {
 		if (_new_buffer[y * _buffer_width + x / 8] & (1 << (x & 7))) {
@@ -126,9 +147,13 @@ void BROSE9323::drawPixel(int16_t x, int16_t y, uint16_t color) {
 		}
 #endif
 	}
+#endif
 }
 
 void BROSE9323::fillScreen(uint16_t color) {
+#ifdef ESP8266
+	stream->print(color ? "F1\n" : "F0\n");
+#else
 	memset(_new_buffer, color ? 0xFF : 0x00, _buffer_size);
 	if (_direct_mode) {
 		_setData(color);
@@ -149,8 +174,10 @@ void BROSE9323::fillScreen(uint16_t color) {
 		memset(_old_buffer, color ? 0xFF : 0x00, _buffer_size);
 #endif
 	}
+#endif
 }
 
+#ifndef ESP8266
 void BROSE9323::printBuffer(void) {
 	for (uint8_t y = 0; y < height(); y++) {
 		for (uint8_t x = 0; x < width(); x++) {
@@ -213,3 +240,4 @@ void BROSE9323::_strobe(void) {
 	delayMicroseconds(_flip_time);
 	digitalWrite(ENABLE, 1);
 }
+#endif

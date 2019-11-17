@@ -25,6 +25,10 @@ class BROSE9323 : public Adafruit_GFX {
 		const uint16_t _buffer_size;
 		uint8_t* _old_buffer = NULL;
 		uint8_t* _new_buffer = NULL;
+
+#ifdef ESP8266
+		Stream* stream;
+#else
 		uint8_t _active_panel = 255;
 		uint8_t _active_col = 255;
 		uint8_t _active_row = 255;
@@ -75,13 +79,19 @@ class BROSE9323 : public Adafruit_GFX {
 		void _selectRow(uint8_t);
 		void _setData(bool);
 		void _strobe(void);
+#endif
 	public:
 		BROSE9323(uint8_t, uint8_t, uint8_t, uint16_t ft = 280);
+#ifdef ESP8266
+		void begin(Stream* = &Serial);
+#endif
 		void begin(void);
-		void display(void);
+		void display(bool force = false);
 		void drawPixel(int16_t x, int16_t y, uint16_t color);
 		void fillScreen(uint16_t);
+#ifndef ESP8266
 		void printBuffer(void);
 		void setDirect(bool);
+#endif
 };
 #endif //BROSE9323_H
