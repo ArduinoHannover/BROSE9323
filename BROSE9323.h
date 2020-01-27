@@ -19,13 +19,13 @@ const uint8_t _hannio_splash[] PROGMEM = {
 
 class BROSE9323 : public Adafruit_GFX {
 	private:
-		const uint16_t _flip_time;
 		uint16_t _flip_time;
 		const uint8_t _panel_width;
 		const uint8_t _buffer_width;
 		const uint16_t _buffer_size;
 		uint8_t* _old_buffer = NULL;
 		uint8_t* _new_buffer = NULL;
+		bool _direct_mode = false;
 
 #ifdef ESP8266
 		Stream* stream;
@@ -34,7 +34,6 @@ class BROSE9323 : public Adafruit_GFX {
 		uint8_t _active_col = 255;
 		uint8_t _active_row = 255;
 		bool _active_data;
-		bool _direct_mode = false;
 
 #ifndef FLIPDOT_PLCC_ADAPTER
 		const uint8_t ENABLE    =  7,
@@ -90,10 +89,10 @@ class BROSE9323 : public Adafruit_GFX {
 		void display(bool force = false);
 		void drawPixel(int16_t x, int16_t y, uint16_t color);
 		void fillScreen(uint16_t);
+		void setDirect(bool);
 		void setTiming(uint16_t);
 #ifndef ESP8266
 		void printBuffer(void);
-		void setDirect(bool);
 #endif
 };
 #endif //BROSE9323_H

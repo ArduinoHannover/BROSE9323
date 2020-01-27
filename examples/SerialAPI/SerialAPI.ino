@@ -121,7 +121,9 @@ void loop() {
 					break;
 				}
 			// Set Pixel
-			case 's': case 'S': // Sxxyyc (xx = 8 bit hex x position; y = 8 bit y position; c = 0/1 color)
+			case 'S':
+				display.setDirect(true);
+			case 's': // Sxxyyc (xx = 8 bit hex x position; y = 8 bit y position; c = 0/1 color)
 				{
 					while (Serial.available() <= 6) {
 						delay(1);
@@ -130,6 +132,17 @@ void loop() {
 					uint8_t y = (hex2dec(Serial.read()) << 4) | hex2dec(Serial.read());
 					bool color = hex2dec(Serial.read());
 					display.drawPixel(x, y, color);
+					display.setDirect(false);
+					break;
+				}
+			// Set Timing
+			case 'T': case 't': // Tttt (ttt = decimal timing in us)
+				{
+					while (Serial.available() <= 6) {
+						delay(1);
+					}
+					uint16_t t = atoi(Serial.readStringUntil('\n').c_str());
+					display.setTiming(t);
 					break;
 				}
 			default:

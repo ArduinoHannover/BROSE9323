@@ -12,6 +12,7 @@ const char* password = "password";
 
 #ifdef USE_LED
 //You can replace the neon tube by a LED Stripe powered by the ESP
+//You may better want to use NeoPixelBus with DMA on GPIO 3 (RX)
 Adafruit_NeoPixel strip(72, 2, NEO_GRBW + NEO_KHZ800);
 #endif
 BROSE9323 display(112, 16, 28, 300);
@@ -61,13 +62,13 @@ void setup() {
 			display.setTextColor(1);
 			display.setCursor((display.width() - 2 * 12) / 2, 2);
 			display.setTextSize(2);
-			display.print("OTA");
+			display.print("OK");
 			display.display();
-			display.println("OK");
 		} else {
 			uint8_t f = progress*display.width()/total;
+			display.setDirect(true);
 			display.drawPixel(f, 0, 1);
-			display.display();
+			display.setDirect(false);
 		}
 	});
 	ArduinoOTA.onError([](ota_error_t error) {

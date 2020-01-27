@@ -107,7 +107,7 @@ void BROSE9323::display(bool force) {
 void BROSE9323::drawPixel(int16_t x, int16_t y, uint16_t color) {
 #ifdef ESP8266
 	char s[10];
-	sprintf(s, "S%02x%02x%d\n", x, y, (bool)color);
+	sprintf(s, "%c%02x%02x%d\n", _direct_mode ? 'S' : 's', x, y, (bool)color);
 	stream->print(s);
 	stream->flush();
 #else
@@ -199,10 +199,6 @@ void BROSE9323::printBuffer(void) {
 		}
 		Serial.println();
 	}
-}
-
-void BROSE9323::setDirect(bool d) {
-	_direct_mode = d;
 }
 
 void BROSE9323::_selectColumn(uint8_t col) {
