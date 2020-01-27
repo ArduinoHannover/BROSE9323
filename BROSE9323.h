@@ -20,6 +20,7 @@ const uint8_t _hannio_splash[] PROGMEM = {
 class BROSE9323 : public Adafruit_GFX {
 	private:
 		const uint16_t _flip_time;
+		uint16_t _flip_time;
 		const uint8_t _panel_width;
 		const uint8_t _buffer_width;
 		const uint16_t _buffer_size;
@@ -89,6 +90,7 @@ class BROSE9323 : public Adafruit_GFX {
 		void display(bool force = false);
 		void drawPixel(int16_t x, int16_t y, uint16_t color);
 		void fillScreen(uint16_t);
+		void setTiming(uint16_t);
 #ifndef ESP8266
 		void printBuffer(void);
 		void setDirect(bool);

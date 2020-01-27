@@ -177,6 +177,20 @@ void BROSE9323::fillScreen(uint16_t color) {
 #endif
 }
 
+void BROSE9323::setTiming(uint16_t t) {
+#ifdef ESP8266
+	stream->write('T');
+	stream->print(t);
+	stream->write('\n');
+#else
+	_flip_time = t;
+#endif
+}
+
+void BROSE9323::setDirect(bool d) {
+	_direct_mode = d;
+}
+
 #ifndef ESP8266
 void BROSE9323::printBuffer(void) {
 	for (uint8_t y = 0; y < height(); y++) {
